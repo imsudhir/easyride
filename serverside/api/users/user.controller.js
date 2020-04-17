@@ -7,7 +7,7 @@ const {
       updateUserLocation 
     } = require("./user.service");
     const { sign } =require("jsonwebtoken");
-    const { genSaltSync, hashSync, compareSync } = require("bcrypt")
+    const { genSaltSync, hashSync, compareSync } = require("bcryptjs")
     const pool = require("../../config/database")
 
     module.exports = {

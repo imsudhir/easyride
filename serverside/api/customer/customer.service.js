@@ -32,6 +32,24 @@ module.exports = {
              } 
         );
     },
+    customerEntryToBooking: (data, callback) => {
+        console.log('insert-datakkkkkkkkkk');
+        console.log(data);
+              pool.query(`insert into booking (customer_contact, start_address, end_address) 
+              values (?,?,?)`,
+              [
+              data.contact,
+              data.pickup,
+              data.dropl
+            ],
+             (error, results, fields) => {
+                 if(error){ 
+                     return callback(error);
+                 } 
+                 return callback(null, results)
+             } 
+        );
+    },
     getcustomerByContact:(body, callback) => {
         pool.query( 
             `SELECT * FROM customer where contact =?`,
@@ -108,7 +126,7 @@ module.exports = {
     },
     driverList:(data, callback) => {
         pool.query( 
-            `SELECT * FROM location where id IN (SELECT id FROM driver WHERE availability = 1)`,
+            `SELECT * FROM location where availability = 1`,
             [data.contact],
             (error, results, fields) => { 
                 if(error){
@@ -122,6 +140,18 @@ module.exports = {
         pool.query( 
             `SELECT id, full_name, contact_number FROM driver where id =?`,
             [driverid],
+            (error, results, fields) => { 
+                if(error){
+                    callback(error)
+                } 
+                return callback(null, results[0]);
+            }
+        );
+    },
+    getBookingAllotmentStatus:(booking_id, callback) => {
+        pool.query( 
+            `SELECT * FROM booking where id =?`,
+            [booking_id],
             (error, results, fields) => { 
                 if(error){
                     callback(error)

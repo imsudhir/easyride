@@ -8,7 +8,7 @@ app.use(cors());
 
 module.exports = { 
     customerEntryToBooking: (data, callback) => {
-        console.log('insert-data');
+        console.log('insert-datakkkkkkkkkk');
         console.log(data);
               pool.query(`insert into booking (customer_contact, start_address, end_address) 
               values (?,?,?)`,
@@ -39,8 +39,20 @@ module.exports = {
     },
     getdriverByid:(body, callback) => {
         pool.query( 
-            `SELECT id,full_name, contact_number FROM driver where id =?`,
+            `SELECT * FROM location where id =?`,
             [body.driver_id],
+            (error, results, fields) => { 
+                if(error){
+                    callback(error)
+                } 
+                return callback(null, results[0]);
+            }
+        );
+    },
+    getbookingDetailByid:(booking_id, callback) => {
+        pool.query( 
+            `SELECT * FROM booking where id =?`,
+            [booking_id],
             (error, results, fields) => { 
                 if(error){
                     callback(error)
@@ -54,15 +66,20 @@ module.exports = {
         console.log("boooking...........");
         console.log(booking_id);
         var finish_status=0;
+        var booking_status=0;
         pool.query(
             `update booking set
+             driver_id=?,
              driver_contact=?,
              driver_name=?,
+             booking_status=?,
              finish_status=?
              where id=?`,
              [ 
-                data.contact_number,
-                data.full_name,
+                data.id,
+                data.contact,
+                data.name,
+                booking_status,
                 finish_status,
                 booking_id
              ],

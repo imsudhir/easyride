@@ -2,22 +2,23 @@ const {
     customerEntryToBooking,
     getcustomerByContacts,
     getdriverByid,
+    getbookingDetailByid,
     alocateDriverToBooking
     } = require("./booking.service");
     const pool = require("../../config/database")
     module.exports = {
-    createBooking:(req, res) => {
+    createBooking1:(req, res) => {
         const body = req.body;
         console.log(body);
         getcustomerByContacts(body, (err, results) => {
-            console.log(results);
+            console.log(results,"get customer.......");
             var customer_details={
                 contact : results.contact,
                 pickup : results.pickup,
                 drop : results.dropl
             }
             console.log("jikjkjkk...............");
-            console.log(customer_details.dropl);
+            console.log(customer_details.drop);
             if(err){
                 console.log(err);
             }
@@ -74,7 +75,49 @@ const {
      
     });
     },
-     updatecustomers:(req, res) => {
+    createBooking:(req, res) => {
+        const body = req.body;
+        getdriverByid(body, (err, results) => {
+            console.log(results);
+            console.log(body.driver_id);
+            console.log("driver details........");
+            if(err){
+                console.log(err); 
+            }
+        alocateDriverToBooking(results, body.bookingid, (err, results) => {
+            console.log(results,';;;;;;;;;;;;;;;;;;;;;;;;;');
+            console.log(body.driver_id);
+            if(err){
+                console.log(err); 
+            }
+            if(results.affectedRows){
+                getbookingDetailByid(body.bookingid, (err, results) => {
+                    console.log(results);
+                    console.log(body.driver_id);
+                    console.log("driver details........");
+                    if(err){
+                        console.log(err); 
+                    }   
+                return res.status(200).json({ 
+                    success:"1",
+                    contact : results.customer_contact,
+                    pickup : results.start_address,
+                    drop : results.end_address,
+                    distance:results.total_distance,
+                    price:results.total_price
+                })
+            });
+            }else{
+                return res.status(200).json({ 
+                    success:"0",
+                    message:"booking failed"
+                })
+            }
+        });
+    });
+},
+    
+    updatecustomers:(req, res) => {
         const body = req.body;
         console.log(req.files);
         updatecustomer(body, req.files, (err, results) => {
@@ -96,4 +139,3 @@ const {
         });
      }
 }
-  

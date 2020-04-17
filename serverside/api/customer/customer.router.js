@@ -3,8 +3,10 @@ const {
       login,
       verify,
       searchDriver,
+      resendOtp,
       updatecustomers,
   } = require("./customer.controller");
+  
 const router = require("express").Router();
 const multer=require('multer')
 const upload =multer({dest:'./uploads'})
@@ -20,5 +22,6 @@ var storage = multer.diskStorage({
 router.post("/", createcustomer);
 router.post("/login", login);
 router.get("/verify", verify);
+router.post("/resendOtp", resendOtp);
 router.patch("/searchDriver", searchDriver);
 module.exports = router; 

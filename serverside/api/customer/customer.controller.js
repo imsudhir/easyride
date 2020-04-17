@@ -5,14 +5,21 @@ const {
       updatecustomer,
       updateCustomerOtp,
       driverList,
+      getBookingAllotmentStatus,
       updateCustomerLocation,
       updateCustomerFcm,
+      customerEntryToBooking,
       getdriversByid 
     } = require("./customer.service");
+    
+    const fetch = require('node-fetch');
+    const axios = require('axios');
+    // import axios from 'axios'; 
     const { sign } =require("jsonwebtoken");
     const { genSaltSync, hashSync, compareSync } = require("bcrypt")
     const pool = require("../../config/database")
     var admin = require("firebase-admin");
+    var fs = require('fs');
     var serviceAccount = require("C:/Users/FnB IT Serve Pvt Ltd/Documents/GitHub/easyride/serverside/privatekeyDriver.json");
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
@@ -39,24 +46,58 @@ const {
                 // data:results
             })
         })
-    },
+    }, 
     login:(req, res) => { 
-        console.log("...................../");
         const body = req.body;
         console.log(req.body); 
+        //...
+        var generateOtp = Math.floor(1000 + Math.random() * 9000);
+        var usermobileinput = body.contact;
+        console.log(usermobileinput);
+        var otpResponseStatus;
+            var user=501234; 
+            var authkey="92wITJSMLFOHs";
+            var mobile= usermobileinput;
+            var sender="EZYRID";
+            var rpt=1;
+            var text="Welcome to ezyride OTP-"+generateOtp;
+            console.log(text);
+            var smsurl="http://sms.ziofytech.com/api/pushsms?user="+user+"&authkey="+authkey+"&sender="+sender+"&mobile="+mobile+"&text="+text+"&rpt="+rpt;
+            console.log(smsurl);
+            //...
+function sendOtptoMobile(smsurl) {
+                
+                axios.get(smsurl)
+                .then(function (response) {
+                  // handle success
+                  console.log(response.data);
+                  console.log(response.data.STATUS);
+                  otpResponseStatus = response.data.STATUS;
+                  console.log(otpResponseStatus);
+                return otpResponseStatus
+                })
+                .catch(function (error) {
+                  // handle error
+                  console.log(error);
+                })
+                .then(function () {
+                  // always executed
+                });
+            }
         if(body.contact){ 
+            console.log(otpResponseStatus);
         getcustomerByContact(body, (err, results) => {
             if(err){
                 console.log(err);
             } 
             if(!results){
             console.log("contact not mached");
-            var generateOtp = Math.floor(1000 + Math.random() * 9000);
                 createcustomerByContact(body, generateOtp, (err, results) => {
                 console.log(results);
                 console.log("lllllllll");
                     if(results.affectedRows){
-                      
+                    sendOtptoMobile(smsurl);
+                      console.log(otpResponseStatus);
                        return res.json({ 
                            success:"1",
                            message:"contact saved otp send",
@@ -70,8 +111,10 @@ const {
                 }) 
             } else{ 
                 console.log("update otp part //////////");
-                var otp = Math.floor(1000 + Math.random() * 9000);
-                updateCustomerOtp(body, otp, (err, results) => {
+               var otpResponseStatus1=sendOtptoMobile(smsurl);
+               console.log(otpResponseStatus1);
+               console.log("/////////////////////");
+                updateCustomerOtp(body, generateOtp, (err, results) => {
                         console.log(results);
                         console.log("......///////");
                          if(err){
@@ -116,6 +159,82 @@ const {
         });
     }
      },
+     resendOtp:(req, res)=>{
+         console.log("hiiiiii................");
+        var body = req.body;
+        console.log(body);
+        var generateOtp = Math.floor(1000 + Math.random() * 9000);
+        var usermobileinput = body.contact;
+        console.log(usermobileinput);
+        var otpResponseStatus;
+            var user=501234; 
+            var authkey="92wITJSMLFOHs";
+            var mobile= usermobileinput;
+            var sender="EZYRID";
+            var rpt=1;
+            var text="Welcome to ezyride OTP-"+generateOtp;
+            console.log(text);
+            var smsurl="http://sms.ziofytech.com/api/pushsms?user="+user+"&authkey="+authkey+"&sender="+sender+"&mobile="+mobile+"&text="+text+"&rpt="+rpt;
+//...
+function sendOtptoMobile(smsurl) {
+                
+                axios.get(smsurl)
+                .then(function (response) {
+                  // handle success
+                  console.log(response.data);
+                  console.log(response.data.STATUS);
+                  otpResponseStatus = response.data.STATUS;
+                  console.log(otpResponseStatus);
+                return otpResponseStatus
+                })
+                .catch(function (error) {
+                  // handle error
+                  console.log(error);
+                })
+                .then(function () {
+                  // always executed
+                });
+            }
+        console.log("update otp part //////////");
+        var otpResponseStatus1=sendOtptoMobile(smsurl);
+        console.log(otpResponseStatus1);
+        console.log("/////////////////////");
+         updateCustomerOtp(body, generateOtp, (err, results) => {
+                 console.log(results);
+                 console.log("......///////");
+                  if(err){
+                     console.log(err);
+                     return;
+                 } 
+                 if(results.affectedRows){
+                     getcustomerByContact(body, (err, results) => {
+                         console.log(">>>>>>>");
+                         console.log(results);
+                         console.log(">>>>>>>");
+                         if(err){
+                             console.log(err);
+                         } 
+                     if(!results.otp){
+                         return res.json({
+                             success:"0",
+                             message:"otp not found"
+                         });
+                     } else{
+                         return res.json({
+                             success:"1",
+                             otp:results.otp,
+                             message:"contact matched otp send"
+                         });
+                     }                            
+                   });
+                 } else{
+                         return res.json({
+                             success:"0",
+                             message:"otp not updated"
+                         });
+                       } 
+             });
+     },
      verify:(req, res) => {
          var getBody = req.body;
          console.log(getBody);
@@ -126,8 +245,6 @@ const {
             }
             if(results.otp===getBody.otp){
                 updateCustomerFcm(getBody, (err, results) => {
-                    // console.log(results.affectedRows);
-                    // console.log(results); 
                     if(err){
                         console.log(err);
                         return;
@@ -149,27 +266,26 @@ const {
             });
         }
         })
-     
       },
       searchDriver:(req, res) => {
         const body = req.body;
-        // console.log(body);
         if(body.contact && body.pickup && body.dropl){
-        updateCustomerLocation(body, (err, results) => {
-            // console.log(results.affectedRows);
+        customerEntryToBooking(body, (err, results) => {
+            console.log(".............................................");
+            console.log(results);
             if(err){
                 console.log(err);
                 return;
             }
+            var booking_id=results.insertId; 
+        
             if(!results.affectedRows){
                 return res.json({
                     success: "0",
-                    message: "failed to update user"
+                    message: "failed to update customer location"
                 });
             } else{
                 driverList(body, (err, results) => {
-                    // console.log(body);
-                    // console.log(results);
                     function getDistance(clat1, clon1, dlat2, dlon2, unit) {
                         if ((clat1 == dlat2) && (clon1 == dlon2)) {
                             return 0;
@@ -191,93 +307,104 @@ const {
                             return dist;
                         }
                     }
-                    console.log('.......'); 
-
-                    // var returned_data =Array;
-                    var returned_data = [];
-                   var bb= getcustomerByContact(body, (err, results) => {
-                        if(err){
-                            console.log(err);
-                        } 
-                        // console.log(driver.id); 
-                    var plat = results.plat;
-                    var plong = results.plong;
-                        // var distance= getDistance(driver.latitude, driver.longitude, results.plat, results.plong)/0.6217;
-                        // console.log(plong);
-                    }); 
+                    console.log(booking_id);
+                    var returned_distance = [];
+                    var returned_DriverData = [];
                     results.forEach(driver => {
                         var key = driver.id;
-                        console.log(driver);
                     var distance= getDistance(driver.latitude, driver.longitude, body.plat, body.plong)/0.6217;
-                    var getDistanceString= distance.toString().concat("|").concat(key).concat("|").concat(driver.fcmtoken).concat("|").concat(driver.contact).concat("|").concat(driver.name);
-                        // var getDistanceString= distance.toString().concat("|").concat(key).concat("|").concat(driver.fcmtoken);
-                        returned_data.push(getDistanceString);
-                        returned_data = returned_data.sort();
-                    });
-                    if(returned_data[3] !==null){
-                            console.log("nnn...");
-                            var token = returned_data[3].split("|")[2];
-                            console.log(token,'llllllllllllllllllllllllllllll');
+                     var getDriverDataString= distance.toString().concat("|").concat(key).concat("|").concat(driver.fcmtoken).concat("|").concat(driver.contact).concat("|").concat(driver.name);
+                    //  var getDistanceString= distance.toString().concat("|").concat(key).concat("|").concat(driver.fcmtoken);
+                     var getDistanceString= distance.toString();
+                        returned_distance.push(getDistanceString);
+                        returned_DriverData.push(getDriverDataString);
+                     });
+                     const sortReturned_distance = () => {
+                        returned_distance.sort((a, b)=>{return a - b});
+                    return returned_distance  
+                    }
+                    const sortReturned_DriverData = () => {
+                        returned_DriverData.sort((a, b)=>{return a - b});
+                    return returned_DriverData  
+                    }
+                      var sortedReturned_distance = sortReturned_distance();
+                      console.log(sortedReturned_distance,'>>>>>>>>>>>>>>');
+                     
+    
+         const checkDriverAcceptance = () => {
+                    var count = 0;
+                    console.log(booking_id);
 
-                            var payload = {
-                                notification: {
-                                  title:"Customer Details",
-                                  body: "Accept Booking"
-                                },
-                                data: {
-                                  contact: body.contact
-                                } 
-                              };
-                              var options = {
-                                priority: "high", 
-                                timeToLive: 60 * 60 * 24
-                              };
-                            admin.messaging().sendToDevice('cYYxFxvwSGq6W7aRQzo9lH:APA91bGZLC-2-Uz0e2Q7tTjVotgMt-xO1AfaPQfP3OVkTmzml8We52FGUjOlaIXY8BcB-pOJnxFc9RwDKqf8badLBFzVL0m4TPM9ul6wmq8IpfRf1AjApdOpdLh0w0uX1B7DNfcbSz97', payload, options)
-                            .then((response) => {
-                                    console.log('Successfully sent message:', response);
-                                    console.log(response.results[0].error);
-                            }).catch((error) => { 
-                                    console.log('Error sending message:', error);
-                            });
-                            var driverid=returned_data[0].split("|")[1];
-                            getdriversByid(driverid, (err, results) => {
-                                console.log("driver details to customer........");
-                                console.log(results);
-                                    var driver_name = results.full_name;
-                                    var contact = results.contact_number;
-                                console.log(driver_name); 
-                                if(err){
-                                    console.log(err); 
-                                }
-                                console.log(results);
-                                console.log("./././.");  
-                            }); 
-                            if(results.id !==null){
-                                return res.json({ 
-                                    success: "1",
-                                    cutomerContact:body.contact,
-                                    driverId:returned_data[3].split("|")[1],
-                                    contact:returned_data[3].split("|")[3],
-                                    name:returned_data[3].split("|")[4],
-                                    message: "notification sent..."
-                                });
+                      for(i=0; i<=sortedReturned_distance.length; i++){
+
+                            for(j=0; j<=returned_DriverData.length; j++){
+                                if(sortedReturned_distance[i]==returned_DriverData[j].split("|")[0]){
+                                    console.log(returned_DriverData[j].split("|")[1],"is our main driver to send notification");
+                                     // exit;
+                              var token = returned_DriverData[j].split("|")[2];
+                              console.log(booking_id,'...............................');
+                                    var payload = { 
+                                        notification: {
+                                          title:"Customer Details",
+                                          body: "Accept Booking"
+                                        },
+                                        data: {
+                                          contact: body.contact,
+                                          bookingid:booking_id.toString()
+                                    } 
+                                      };
+                                      var options = {
+                                        priority: "high", 
+                                        timeToLive: 60 * 60 * 24
+                                      };
+                                    admin.messaging().sendToDevice(token, payload, options)
+                                    .then((response) => {
+                                            console.log('Successfully sent message:', response);
+                                            var notificationSend = response.successCount;
+                                            console.log("jojojojoo");
+                                            console.log(response.results[0].error);
+                                            console.log(response.failureCount);
+                                    }).catch((error) => { 
+                                            console.log('Error sending message:', error);
+                                    });
+                                      
+                        var id = setInterval(bookingAllotmentStatus, 1000);
+                            function bookingAllotmentStatus() {
+                                getBookingAllotmentStatus(booking_id, (err, results) => {
+                                    console.log(results);
+                                    if(err){
+                                        console.log(err);
+                                    }
+                                    if(results.driver_id){
+                                        console.log(results.driver_id);
+                                        console.log("driver alloted"); 
+                                    clearInterval(id);
+                                    console.log("booking allotment status loop interval cleared"); 
+                                    return res.json({
+                                        success: "1",
+                                        contact: results.driver_contact,
+                                        name: results.driver_name
+                                    });
+
+                                    }else{
+                                        console.log('results.driver_id not found');
+                                    }
+                                }); 
+                            console.log("hi"); 
                             }
-                    }else{
-                        return res.json({
-                            success: "0",
-                            message: "notification not sent.."
-                        }); 
-                    }
-                    if(err){
-                        console.log(err);
-                        return;
-                    }
-                    
-                    return res.json({
-                        success: "1",
-                        driverData:returned_data,
-                        message: "searching.."
-                    }); 
+                                        // }
+                                 
+                                    break;
+                                    // aasasas;
+                                }
+                            }
+                            console.log("outerloop1");
+                            break;
+                            console.log("outerloop2");
+                        }
+                       
+                      }
+                      checkDriverAcceptance();
                 }); 
         } 
         });
